@@ -1,7 +1,7 @@
 # 云部署版配置(与本地版同源; 修改: 扫描间隔10s、关闭桌面声音)
 # 本地版: 510500_put_scanner/config.yaml
 data_source:
-  primary: tonghuashun          # tonghuashun=同花顺现货+新浪期权; akshare_sina=纯新浪; mock=离线模拟; eastmoney=备用
+  primary: akshare_sina          # 云端(境外服务器): 新浪源最稳; 同花顺可能被墙. 本地版可改回 tonghuashun
   underlying: "510500"
   scan_interval_seconds: 10
   request_timeout: 8
