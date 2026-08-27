@@ -1,0 +1,114 @@
+# 云部署版配置(与本地版同源; 修改: 扫描间隔10s、关闭桌面声音)
+# 本地版: 510500_put_scanner/config.yaml
+data_source:
+  primary: tonghuashun          # tonghuashun=同花顺现货+新浪期权; akshare_sina=纯新浪; mock=离线模拟; eastmoney=备用
+  underlying: "510500"
+  scan_interval_seconds: 10
+  request_timeout: 8
+  max_retries: 3
+  retry_backoff_seconds: 1.0
+  max_batch: 40
+  quote_stale_seconds: 30
+  enable_greeks: true
+underlyings:
+  '510500':
+    name: 中证500ETF
+    category: 500ETF
+    spot_code: '510500'
+    multiplier: 10000
+    strike_widths:
+    - 0.25
+    - 0.5
+    credit_anchor:
+      a6: 0.085
+      a8: 0.095
+      a10: 0.105
+    alert_min_credit: 0.085
+    enabled: true
+  '588080':
+    name: 科创50ETF易方达
+    category: 科创50ETF
+    spot_code: '588080'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.018
+      a8: 0.022
+      a10: 0.026
+    alert_min_credit: 0.018
+    enabled: true
+contracts:
+  expire_days_min: 15
+  expire_days_max: 45
+  expire_months_count: 3        # 扫描接下来 N 个到期月份(如 3=9月+10月+12月季度); 0=按上面天数窗口
+  preferred_expire_month: null
+  exclude_adjusted: true
+account:
+  capital: 500000
+  max_risk_per_batch_pct: 0.02
+  suggested_lots_cap: 100
+strategy:
+  min_credit_attractive: 0.085
+  min_credit_good: 0.095
+  min_credit_strong: 0.105
+  min_safety_margin: 0.02
+  min_reward_risk_ratio: 0.5
+  sell_delta_min_abs: 0.15
+  sell_delta_max_abs: 0.35
+  max_leg_bid_ask_ratio: 0.5
+  min_volume: 20
+  min_open_interest: 100
+  filter_illiquid: true
+scoring:
+  weights:
+    credit: 0.3
+    safety: 0.25
+    reward_risk: 0.15
+    liquidity: 0.1
+    delta: 0.1
+    volume_oi: 0.05
+    iv: 0.05
+  min_score_pass: 5.0
+  score_observe_floor: 5.0
+  score_good_floor: 7.0
+  score_strong_floor: 9.0
+  credit_anchor:
+    a6: 0.085
+    a8: 0.095
+    a10: 0.105
+  safety_anchor:
+    a8: 0.02
+    a10: 0.04
+  rr_anchor:
+    a8: 0.5
+    a10: 0.8
+  iv_good_min: 0.15
+  iv_good_max: 0.45
+alerts:
+  confirm_required: 3
+  cooldown_seconds: 300
+  re_alert_score_delta: 0.5
+  re_alert_credit_delta: 0.01
+  min_credit_to_alert: 0.085
+  min_score_to_alert: 7.0
+  console_enabled: true
+  sound_enabled: false           # 云端无桌面, 关闭声音
+  webhook:
+    enabled: false
+    type: ''
+    url: ''
+    secret: ''
+storage:
+  database: data/scanner.db
+  save_every_scan: true
+logging:
+  level: INFO
+  file: logs/scanner.log
+  max_bytes: 10485760
+  backup_count: 5
+mock:
+  scenario: acceptance
+  expiry_date: '2026-09-23'
+  days_to_expiry: 27
