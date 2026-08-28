@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 """
 data_sources/akshare_sina.py
-免费实时行情主适配器（新浪 / AKShare）。
+免费实时行情主适配器（新浪 / AKShare）。支持上交所 + 深交所 ETF 期权。
 
-已实测验证的链路(2026-08-27):
-- 到期月份:   ak.option_sse_list_sina(symbol='500ETF') -> ['202609', ...]
-- 认沽合约代码: ak.option_sse_codes_sina(symbol='看跌期权', trade_date='202609', underlying='510500')
-- 盘口(批量):   https://hq.sinajs.cn/list=CON_OP_10012280,CON_OP_10012145,...
+已实测验证的链路(2026-08-27/28):
+- 上交所到期月份: ak.option_sse_list_sina(symbol='500ETF') -> ['202609', ...]
+- 上交所认沽代码: ak.option_sse_codes_sina(symbol='看跌期权', trade_date='202609', underlying='510500')
+- 深交所合约表:   ak.option_current_day_szse()  -> 标的证券简称(代码)/合约类型/合约编码/到期日
+                  (官方当日表, 覆盖 159901/159915/159919/159922)
+- 盘口(批量, 沪深通用): https://hq.sinajs.cn/list=CON_OP_10012280,CON_OP_90007078,...
   Bid1=字段[22] Ask1=字段[20] 行权价=字段[7] 简称=字段[37]
   成交量=字段[41] 持仓量=字段[5] 行情时间=字段[32] 合约标识M/A=字段[43]
-  到期日=字段[46] 剩余天数=字段[47]
-- Greeks(批量): https://hq.sinajs.cn/list=CON_SO_10012280,...
+  到期日=字段[46] 剩余天数=字段[47]   (沪深字段布局一致, 已实测深市51字段)
+- Greeks(批量, 仅上交所): https://hq.sinajs.cn/list=CON_SO_10012280,...
   Delta=字段[5] Gamma=[6] Theta=[7] Vega=[8] IV=[9] 交易代码=[12] 行权价=[13] 标识=[16]
-- 标的现价:      https://hq.sinajs.cn/list=sh510500  -> 字段[3]=现价, [30]/[31]=日期时间
+  注意: 深交所 CON_SO_ 字段布局与上交所不同, 深市自动关闭 Greeks。
+- 标的现价: https://hq.sinajs.cn/list=sh510500 / sz159915 -> 字段[3]=现价, [30]/[31]=日期时间
 
 内置超时/重试/断线恢复/异常过滤/数据源状态。A 类调整合约在此层标记 is_adjusted。
 """
@@ -42,6 +45,9 @@ SINA_HEADERS_SO = {
                   "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
 }
 
+# 深交所合约表缓存时长(合约日内不变, 5 分钟刷新足够)
+SZSE_TABLE_TTL = 300
+
 
 class AkshareSinaDataSource(MarketDataSource):
     name = "akshare_sina"
@@ -58,12 +64,18 @@ class AkshareSinaDataSource(MarketDataSource):
         self.underlying = str(self.underlying_cfg.get("spot_code", "510500"))
         self.underlying_name = str(self.underlying_cfg.get("name", "ETF"))
         self.category = str(self.underlying_cfg.get("category", "500ETF"))
+        # 交易所识别: 15xxxx=深交所(创业板/深300/深500/深100), 其余=上交所
+        self.exchange = "sz" if str(self.underlying).startswith("15") else "sh"
+        self._szse_cache: Optional[tuple] = None  # (timestamp, DataFrame) 深交所合约表缓存
         self.timeout = float(ds.get("request_timeout", 8))
         self.max_retries = int(ds.get("max_retries", 3))
         self.backoff = float(ds.get("retry_backoff_seconds", 1.0))
         self.max_batch = int(ds.get("max_batch", 40))
         self.stale_seconds = float(ds.get("quote_stale_seconds", 30))
         self.enable_greeks = bool(ds.get("enable_greeks", True))
+        if self.exchange == "sz":
+            # 深交所 CON_SO_ 字段布局与上交所不同, 不解析 Greeks(评分自动给中性分)
+            self.enable_greeks = False
         self._session = requests.Session()
         self._last_ok_at: Optional[dt.datetime] = None
         self._consecutive_failures = 0
@@ -106,12 +118,9 @@ class AkshareSinaDataSource(MarketDataSource):
     # 目标到期月份
     # ------------------------------------------------------------------
     def get_target_months(self) -> List[str]:
-        """选择剩余天数在窗口内的到期月份。
-
-        优先本地按"当月第 4 个星期三"精确计算(场内 ETF 期权行权日惯例,
-        无网络依赖); 若命中再尽力尝试网络精确到期日增强, 失败不阻塞。
-        真实到期日最终以盘口 CON_OP_ 字段46 为准。
-        """
+        """选择剩余天数在窗口内的到期月份。"""
+        if self.exchange == "sz":
+            return self._szse_target_months()
         ak = self._akshare()
         months = ak.option_sse_list_sina(symbol=self.category)
         log.info("新浪返回合约月份: %s", months)
@@ -156,6 +165,77 @@ class AkshareSinaDataSource(MarketDataSource):
         if not picked:
             log.warning("本地计算无命中月份(当前月份: %s, 窗口 %d~%d 天)",
                         months, dmin, dmax)
+        return picked
+
+    # ------------------------------------------------------------------
+    def _szse_df(self) -> Optional[object]:
+        """深交所当日认沽合约表(缓存 SZSE_TABLE_TTL 秒)。返回 pandas.DataFrame 或 None。"""
+        if self._szse_cache is not None:
+            ts, df = self._szse_cache
+            if (dt.datetime.now() - ts).total_seconds() < SZSE_TABLE_TTL:
+                return df
+        ak = self._akshare()
+        try:
+            df = ak.option_current_day_szse()
+        except Exception as e:
+            log.warning("深交所合约表获取失败: %s", e)
+            if self._szse_cache is not None:
+                return self._szse_cache[1]  # 用旧缓存兜底
+            return None
+        col = "标的证券简称(代码)"
+        if col not in df.columns:
+            cols = [c for c in df.columns if "标的" in c]
+            col = cols[0] if cols else None
+        if col is None or "合约类型" not in df.columns or "到期日" not in df.columns:
+            log.warning("深交所合约表列异常: %s", list(df.columns))
+            return None
+        df = df[df[col].astype(str).str.contains(str(self.underlying), regex=False)]
+        df = df[df["合约类型"] == "认沽"]
+        self._szse_cache = (dt.datetime.now(), df)
+        return df
+
+    # ------------------------------------------------------------------
+    def _szse_target_months(self) -> List[str]:
+        """深交所: 从官方当日合约表枚举目标到期月份(YYYYMM)。"""
+        df = self._szse_df()
+        if df is None or len(df) == 0:
+            log.warning("深市 %s 未获取到认沽合约表", self.underlying)
+            return []
+        months = sorted({str(x)[:7].replace("-", "") for x in df["到期日"].astype(str)})
+        from core.contracts import fourth_wednesday, pick_next_expiry_months
+        cf = cfg_contracts()
+        dmin = int(cf.get("expire_days_min", 15))
+        dmax = int(cf.get("expire_days_max", 45))
+        preferred = cf.get("preferred_expire_month")
+        count = int(cf.get("expire_months_count", 0) or 0)
+        today = dt.date.today()
+
+        if count and count > 0:
+            picked = pick_next_expiry_months(months, count, today)
+            if preferred and preferred in picked:
+                return [preferred]
+            if not picked:
+                log.warning("深市 %s 按到期月数量无命中(月份: %s)", self.underlying, months)
+            return picked
+
+        picked = []
+        for m in months:
+            m = m.strip()
+            if len(m) != 6 or not m.isdigit():
+                continue
+            year, month = int(m[:4]), int(m[4:])
+            try:
+                expire = fourth_wednesday(year, month)
+            except ValueError:
+                continue
+            remain = (expire - today).days
+            if dmin <= remain <= dmax:
+                picked.append(m)
+        picked = sorted(picked)
+        if preferred and preferred in picked:
+            return [preferred]
+        if not picked:
+            log.warning("深市 %s 天数窗口无命中(月份: %s)", self.underlying, months)
         return picked
 
     # ------------------------------------------------------------------
@@ -208,6 +288,14 @@ class AkshareSinaDataSource(MarketDataSource):
 
     # ------------------------------------------------------------------
     def _fetch_put_codes(self, months: List[str]) -> List[str]:
+        if self.exchange == "sz":
+            df = self._szse_df()
+            if df is None or len(df) == 0:
+                return []
+            sub = df[df["到期日"].astype(str).str[:7].str.replace("-", "", regex=False).isin(months)]
+            codes = [str(c) for c in sub["合约编码"].tolist() if str(c).strip()]
+            log.info("深市 %s 认沽合约数: %d (月份 %s)", self.underlying, len(codes), months)
+            return codes
         ak = self._akshare()
         codes: List[str] = []
         for m in months:
@@ -233,7 +321,7 @@ class AkshareSinaDataSource(MarketDataSource):
 
     # ------------------------------------------------------------------
     def _fetch_greeks(self, codes: List[str]) -> Dict[str, list]:
-        """批量获取 Greeks; 失败时快速降级(不重试拖慢扫描), 返回 {code: fields_list}"""
+        """批量获取 Greeks(仅上交所启用); 失败时快速降级(不重试拖慢扫描)"""
         result: Dict[str, list] = {}
         try:
             for i in range(0, len(codes), self.max_batch):
@@ -248,8 +336,9 @@ class AkshareSinaDataSource(MarketDataSource):
 
     # ------------------------------------------------------------------
     def _fetch_spot(self) -> tuple:
-        r = self._get(SINA_HQ + f"/list=sh{self.underlying}", headers=SINA_HEADERS_OP)
-        fields = _parse_sina_var(r.text).get(f"sh{self.underlying}", [])
+        px = self.exchange
+        r = self._get(SINA_HQ + f"/list={px}{self.underlying}", headers=SINA_HEADERS_OP)
+        fields = _parse_sina_var(r.text).get(f"{px}{self.underlying}", [])
         if not fields or len(fields) < 32:
             raise RuntimeError(f"标的价格解析失败: {r.text[:120]}")
         try:

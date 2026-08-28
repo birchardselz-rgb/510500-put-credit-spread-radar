@@ -1,7 +1,7 @@
-# 云部署版配置(与本地版同源; 修改: 扫描间隔10s、关闭桌面声音)
-# 本地版: 510500_put_scanner/config.yaml
 data_source:
-  primary: akshare_sina          # 云端(境外服务器): 新浪源最稳; 同花顺可能被墙. 本地版可改回 tonghuashun
+  # akshare_sina=纯新浪(上交所+深交所统一适配, 9 只宽基 ETF 全部实测通过)
+  # tonghuashun=同花顺现货+新浪期权(仅上交所, 深市不支持)
+  primary: akshare_sina
   underlying: "510500"
   scan_interval_seconds: 10
   request_timeout: 8
@@ -11,8 +11,36 @@ data_source:
   quote_stale_seconds: 30
   enable_greeks: true
 underlyings:
+  '510050':
+    name: 上证50ETF
+    category: 50ETF
+    spot_code: '510050'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.009
+      a8: 0.010
+      a10: 0.012
+    alert_min_credit: 0.009
+    enabled: true
+  '510300':
+    name: 沪深300ETF沪
+    category: 300ETF
+    spot_code: '510300'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.030
+      a8: 0.035
+      a10: 0.040
+    alert_min_credit: 0.030
+    enabled: true
   '510500':
-    name: 中证500ETF
+    name: 中证500ETF沪
     category: 500ETF
     spot_code: '510500'
     multiplier: 10000
@@ -25,8 +53,22 @@ underlyings:
       a10: 0.105
     alert_min_credit: 0.085
     enabled: true
+  '588000':
+    name: 科创50ETF
+    category: 科创50ETF
+    spot_code: '588000'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.017
+      a8: 0.020
+      a10: 0.024
+    alert_min_credit: 0.017
+    enabled: true
   '588080':
-    name: 科创50ETF易方达
+    name: 科创板50ETF易方达
     category: 科创50ETF
     spot_code: '588080'
     multiplier: 10000
@@ -38,6 +80,62 @@ underlyings:
       a8: 0.022
       a10: 0.026
     alert_min_credit: 0.018
+    enabled: true
+  '159901':
+    name: 深证100ETF
+    category: 深证100ETF
+    spot_code: '159901'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.032
+      a8: 0.038
+      a10: 0.044
+    alert_min_credit: 0.032
+    enabled: true
+  '159915':
+    name: 创业板ETF
+    category: 创业板ETF
+    spot_code: '159915'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.038
+      a8: 0.044
+      a10: 0.050
+    alert_min_credit: 0.038
+    enabled: true
+  '159919':
+    name: 沪深300ETF深
+    category: 沪深300ETF
+    spot_code: '159919'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.022
+      a8: 0.026
+      a10: 0.030
+    alert_min_credit: 0.022
+    enabled: true
+  '159922':
+    name: 中证500ETF深
+    category: 中证500ETF
+    spot_code: '159922'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.007
+      a8: 0.0085
+      a10: 0.010
+    alert_min_credit: 0.007
     enabled: true
 contracts:
   expire_days_min: 15

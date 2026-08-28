@@ -89,6 +89,12 @@ def load_latest(db_path: str) -> dict:
             if not row:
                 continue
             d = dict(row)
+            try:
+                _m = json.loads(d.get('meta') or '{}')
+                if _m.get('underlying_name'):
+                    d['underlying_name'] = _m['underlying_name']
+            except Exception:
+                pass
             out["scans"][code] = d
             # 该扫描的全部候选
             out["candidates"].extend(_query(

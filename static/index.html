@@ -64,7 +64,7 @@
 <div class="wrap">
   <header>
     <h1>📡 Put 信用价差 · 手机雷达</h1>
-    <div class="sub">510500(中证500) + 588080(科创50) ｜ 只读展示, 绝不自动下单</div>
+    <div class="sub">宽基 ETF 期权(上交所+深交所) ｜ 只读展示, 绝不自动下单</div>
     <div class="sub"><span id="sess"></span><span id="clock"></span></div>
   </header>
 
@@ -90,6 +90,7 @@
 
 <script>
 let autoMs = 5000, autoOn = true, timer = null, curMonth = "全部", curUnder = "全部";
+let UNDER_NAMES = {};
 
 function el(id){ return document.getElementById(id); }
 function fmt(x, n=2){ return (x===null||x===undefined||isNaN(x)) ? "-" : Number(x).toFixed(n); }
@@ -99,25 +100,26 @@ function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;"
 function tierClass(t){ return t==="强机会"?"强":(t==="优质机会"?"优":(t==="观察"?"观":"")); }
 
 function underlineCards(scans){
-  const names = {"510500":"中证500ETF","588080":"科创50ETF易方达"};
   let h = "";
   for(const code in scans){
     const s = scans[code];
     const fresh = Number(s.data_fresh)===1;
     const st = fresh ? '<span class="ustate fresh">新鲜</span>' : '<span class="ustate stale">行情陈旧</span>';
-    const nm = names[code]||code;
+    const nm = s.underlying_name || code;
     h += `<div class="card"><div class="uhead"><span class="uname">${esc(nm)} <small class="mtag">${esc(code)}</small></span>${st}</div>`
        + `<div class="uprice">${fmt(s.spot,4)}</div>`
        + `<div class="umeta">数据时间 ${esc(s.spot_time||"—")} ｜ 源 ${esc(s.source||"—")} ｜ 合约 ${s.n_contracts} ｜ 候选 ${s.n_spreads}</div></div>`;
   }
-  el("underlyings").innerHTML = h || '<div class="empty">暂无扫描数据, 请先在电脑端点击「实时获取数据」</div>';
+  el("underlyings").innerHTML = h || '<div class="empty">暂无扫描数据, 请先扫描</div>';
 }
+
+function uname(code){ return UNDER_NAMES[code] || code; }
 
 function renderChips(cands){
   const months = [...new Set(cands.map(c=>c.expire_month))].sort();
   const under = [...new Set(cands.map(c=>c.underlying))];
   let h = `<span class="chip ${curUnder==="全部"?"on":""}" onclick="setUnder('全部')">全部</span>`;
-  for(const u of under) h += `<span class="chip ${curUnder===u?"on":""}" onclick="setUnder('${u}')">${u==="510500"?"中证500":"科创50"}</span>`;
+  for(const u of under) h += `<span class="chip ${curUnder===u?"on":""}" onclick="setUnder('${u}')">${esc(uname(u))}</span>`;
   h += `<span class="chip ${curMonth==="全部"?"on":""}" onclick="setMonth('全部')">全部月份</span>`;
   for(const m of months) h += `<span class="chip ${curMonth===m?"on":""}" onclick="setMonth('${m}')">${esc(m.slice(0,4))}年${Number(m.slice(5))}月</span>`;
   el("chips").innerHTML = h;
@@ -135,7 +137,7 @@ function renderList(cands){
   let h="";
   list.forEach((c,i)=>{
     const rk = i<3?`rk r${i+1}`:"rk";
-    const nm = c.underlying==="588080"?"科创50":"中证500";
+    const nm = c.underlying_name || uname(c.underlying);
     h += `<div class="row"><div class="${rk}">${i+1}</div>`
        + `<div class="main"><div class="sp">${fmt(c.sell_strike)}/${fmt(c.buy_strike)}P <span class="mtag">${nm}·${Number(c.expire_month.slice(5))}月</span></div>`
        + `<div class="meta2">净收 <span class="b">${fmt(c.credit,4)}</span> ｜ 盈 ${fmt(c.max_profit,0)} / 亏 ${fmt(c.max_loss,0)} ｜ BE ${fmt(c.breakeven,4)}<br>安全垫 ${pct(c.safety_margin)} ｜ 风险比 ${pct(c.reward_risk,0)} ｜ Δ ${fmt(c.sell_delta,2)}</div></div>`
@@ -171,7 +173,11 @@ async function load(){
     el("clock").textContent = " ｜ 服务器 " + (d.session?.server_time||"");
     const s = d.session;
     el("sess").innerHTML = `<span class="sess ${s.state}">${s.label}</span>`;
-    underlineCards(d.scans||{});
+    UNDER_NAMES = {};
+    const sc = d.scans||{};
+    for(const code in sc) UNDER_NAMES[code] = sc[code].underlying_name || code;
+    for(const c of (d.candidates||[])) if(c.underlying) UNDER_NAMES[c.underlying] = UNDER_NAMES[c.underlying] || c.underlying_name || c.underlying;
+    underlineCards(sc);
     const cands = d.candidates||[];
     renderChips(cands);
     renderList(cands);

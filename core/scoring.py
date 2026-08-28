@@ -99,8 +99,8 @@ def score_liquidity(spread: Spread, max_ratio: float = 0.50) -> float:
 
 def score_delta(delta_abs: float, dmin: float = 0.15, dmax: float = 0.35) -> float:
     """卖出腿 Delta 绝对值维度: 优选区间内 -> 10, 向外线性回落"""
-    if delta_abs is None:
-        return 5.0  # 无 Greeks 时给中性分
+    if delta_abs is None or delta_abs <= 0:
+        return 5.0  # 无 Greeks/深市无 delta 时给中性分
     if dmin <= delta_abs <= dmax:
         return 10.0
     if delta_abs < dmin:
