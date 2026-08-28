@@ -44,15 +44,17 @@ def _write_scan_status(payload: dict) -> None:
 
 
 def _scan_loop(cfg: dict, interval: float) -> None:
-    from util import setup_logging
-
-    setup_logging(cfg)
-    from core.engine import ScanEngine
-
-    engine = ScanEngine(cfg)
+    engine = None
     logger = logging.getLogger("cloud.scan")
     while True:
         try:
+            if engine is None:
+                from util import setup_logging
+                setup_logging(cfg)
+                from core.engine import ScanEngine
+                engine = ScanEngine(cfg)
+                logger = logging.getLogger("cloud.scan")
+                logger.info("扫描引擎初始化完成, 标的=%s", list(engine.underlyings.keys()))
             results = engine.run_once()
             n_scans = sum(1 for r in results.values() if getattr(r, "scan_id", None))
             _write_scan_status({
@@ -65,14 +67,18 @@ def _scan_loop(cfg: dict, interval: float) -> None:
             for code, r in results.items():
                 engine._print_round(r)
         except Exception as e:  # noqa: BLE001 - 关键: 单轮失败不退出主循环
-            logger.exception("扫描轮次失败: %s", e)
+            logger.exception("扫描异常: %s", e)
             _write_scan_status({
                 "ts": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "ok": False,
                 "underlyings": 0,
                 "n_scans": 0,
                 "error": str(e)[:600],
+                "error_type": type(e).__name__,
             })
+            # 若初始化阶段失败, 下轮重新初始化
+            if engine is not None and "engine" in str(e.__class__.__name__).lower():
+                engine = None
         time.sleep(max(interval, 5.0))
 
 

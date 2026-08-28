@@ -145,6 +145,19 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
             self._send(200, body, "application/json; charset=utf-8")
             return
+        if path in ("/api/log", "/api/log/"):
+            log_lines = []
+            _lf = os.path.join(ROOT, "logs", "scanner.log")
+            if os.path.exists(_lf):
+                try:
+                    with open(_lf, "r", encoding="utf-8", errors="ignore") as _f:
+                        log_lines = _f.readlines()[-80:]
+                except Exception:
+                    pass
+            body = json.dumps({"ok": True, "log": "".join(log_lines)},
+                              ensure_ascii=False).encode("utf-8")
+            self._send(200, body, "application/json; charset=utf-8")
+            return
         if path in ("/", "/index.html", "/mobile"):
             html = os.path.join(STATIC_DIR, "index.html")
             if os.path.exists(html):
