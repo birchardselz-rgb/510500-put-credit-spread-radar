@@ -1,5 +1,6 @@
 # 云部署运行依赖
 # 主数据源(tonghuashun=同花顺现货+新浪期权)只需 requests + PyYAML, 镜像保持轻量
-# 若切换到 data_source.primary = akshare_sina, 需额外: akshare>=1.14.0
+# 云端部署使用 data_source.primary = akshare_sina(境外服务器新浪源最稳), 必须安装 akshare
 requests>=2.31.0
 PyYAML>=6.0
+akshare>=1.14.0
