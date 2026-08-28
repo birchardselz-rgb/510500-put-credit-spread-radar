@@ -34,6 +34,7 @@ DEFAULT_DB = os.path.normpath(
 )
 
 PORT = int(os.environ.get("SCANNER_MOBILE_PORT", "8503"))
+CAND_LIMIT_PER_UNDER = 8  # 每标的仅返回评分 Top N 候选, 减载提速
 
 
 # ------------------------------------------------------------------
@@ -70,7 +71,14 @@ def _query(conn: sqlite3.Connection, sql: str, args=()):
 def load_latest(db_path: str) -> dict:
     """读取每个标的最新【有效】扫描 + 全部候选 + 报警 + 历史概要"""
     out = {"ok": True, "db": os.path.basename(db_path), "scans": {}, "candidates": [],
-           "alerts": [], "history": []}
+           "alerts": [], "history": [], "scan_status": None}
+    _stf = os.path.join(os.path.dirname(db_path) or ".", "scan_status.json")
+    if os.path.exists(_stf):
+        try:
+            with open(_stf, encoding="utf-8") as _f:
+                out["scan_status"] = json.load(_f)
+        except Exception:
+            pass
     if not os.path.exists(db_path):
         out["ok"] = False
         out["error"] = f"数据库不存在: {db_path}"
@@ -102,8 +110,8 @@ def load_latest(db_path: str) -> dict:
             # 该扫描的全部候选
             out["candidates"].extend(_query(
                 conn,
-                "SELECT * FROM spread_candidates WHERE scan_id=? ORDER BY score DESC",
-                (d["id"],)))
+                "SELECT * FROM spread_candidates WHERE scan_id=? ORDER BY score DESC LIMIT ?",
+                (d["id"], CAND_LIMIT_PER_UNDER)))
         out["alerts"] = _query(
             conn, "SELECT * FROM spread_candidates WHERE alert_fired=1 "
                   "ORDER BY id DESC LIMIT 20")

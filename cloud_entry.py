@@ -6,9 +6,12 @@ cloud_entry.py
 - 扫描线程: 每 scan_interval_seconds 秒扫描全部启用标的, 写入云端本地 DB(data/scanner.db)
 - 手机服务: 只读该 DB, 提供手机端 HTML 页面与 /api/latest JSON
 - 任一异常不退出主循环, 保证 24/7 自愈
+- 扫描状态写入 data/scan_status.json, 供 /api/latest 诊断
 """
 from __future__ import annotations
 
+import datetime as dt
+import json
 import logging
 import os
 import sys
@@ -27,6 +30,18 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
 sys.path.insert(0, ROOT)
 
+STATUS_FILE = os.path.join("data", "scan_status.json")
+
+
+def _write_scan_status(payload: dict) -> None:
+    """把最近一轮扫描的成功/失败状态写入文件, 供手机 API 诊断展示"""
+    try:
+        os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
+        with open(STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+    except Exception:  # noqa: BLE001
+        pass
+
 
 def _scan_loop(cfg: dict, interval: float) -> None:
     from util import setup_logging
@@ -39,10 +54,25 @@ def _scan_loop(cfg: dict, interval: float) -> None:
     while True:
         try:
             results = engine.run_once()
+            n_scans = sum(1 for r in results.values() if getattr(r, "scan_id", None))
+            _write_scan_status({
+                "ts": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "ok": True,
+                "underlyings": len(results),
+                "n_scans": n_scans,
+                "error": None,
+            })
             for code, r in results.items():
                 engine._print_round(r)
         except Exception as e:  # noqa: BLE001 - 关键: 单轮失败不退出主循环
             logger.exception("扫描轮次失败: %s", e)
+            _write_scan_status({
+                "ts": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "ok": False,
+                "underlyings": 0,
+                "n_scans": 0,
+                "error": str(e)[:600],
+            })
         time.sleep(max(interval, 5.0))
 
 

@@ -9,63 +9,66 @@
   :root{
     --bg:#0d1117; --card:#161b22; --card2:#1c2330; --line:#2d333b;
     --txt:#e6edf3; --sub:#8b949e; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
-    --blue:#58a6ff; --accent:#e74c3c; --gold:#f39c12;
+    --blue:#58a6ff; --gold:#f39c12;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding-bottom:70px;}
-  .wrap{max-width:560px;margin:0 auto;padding:12px;}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding-bottom:64px;}
+  .wrap{max-width:560px;margin:0 auto;padding:10px 12px 20px;}
   header{position:sticky;top:0;background:var(--bg);z-index:10;padding:10px 0 8px;border-bottom:1px solid var(--line);}
-  h1{font-size:17px;font-weight:700;letter-spacing:.5px;}
-  .sub{font-size:11px;color:var(--sub);margin-top:2px;}
-  .sess{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:1px;}
+  h1{font-size:16px;font-weight:700;letter-spacing:.3px;}
+  .sub{font-size:10.5px;color:var(--sub);margin-top:2px;}
+  .sess{display:inline-block;font-size:10.5px;padding:1px 8px;border-radius:10px;margin-left:4px;vertical-align:1px;}
   .sess.trading{background:#0f2e1a;color:var(--ok);border:1px solid #1f6f3a;}
   .sess.closed{background:#33270f;color:var(--warn);border:1px solid #5a4a1f;}
-  .toolbar{display:flex;gap:8px;margin:10px 0 6px;align-items:center;}
-  .btn{flex:1;border:1px solid var(--line);background:var(--card);color:var(--txt);padding:9px 0;border-radius:8px;font-size:13px;cursor:pointer;}
+  .toolbar{display:flex;gap:8px;margin:8px 0;align-items:center;}
+  .btn{flex:1;border:1px solid var(--line);background:var(--card);color:var(--txt);padding:8px 0;border-radius:8px;font-size:13px;cursor:pointer;}
   .btn:active{background:var(--card2);}
-  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--sub);display:inline-block;margin-right:6px;}
-  .live-dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok);}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;}
-  .uhead{display:flex;justify-content:space-between;align-items:center;}
-  .uname{font-size:14px;font-weight:600;}
-  .ustate{font-size:12px;padding:2px 8px;border-radius:8px;}
-  .ustate.fresh{background:#0f2e1a;color:var(--ok);}
-  .ustate.stale{background:#33270f;color:var(--warn);}
-  .uprice{font-size:26px;font-weight:800;margin-top:4px;}
-  .umeta{font-size:11px;color:var(--sub);margin-top:3px;}
-  .chips{display:flex;gap:6px;overflow-x:auto;padding:6px 0;}
-  .chip{flex:0 0 auto;padding:6px 12px;border-radius:14px;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--sub);cursor:pointer;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--sub);display:inline-block;margin-right:5px;vertical-align:1px;}
+  .dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok);}
+  .errbar{background:#3d1d1d;border:1px solid #7d2f2f;color:#ffa198;font-size:11px;border-radius:8px;padding:7px 10px;margin:6px 0;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0;}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 6px;text-align:center;min-width:0;}
+  .cell .nm{font-size:10px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cell .px{font-size:16px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;}
+  .cell .st{font-size:9px;margin-top:2px;}
+  .st.fresh{color:var(--ok);} .st.stale{color:var(--warn);}
+  .cell .tm{font-size:8.5px;color:var(--sub);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chips{display:flex;gap:5px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch;}
+  .chip{flex:0 0 auto;padding:5px 11px;border-radius:13px;font-size:11.5px;border:1px solid var(--line);background:var(--card);color:var(--sub);cursor:pointer;}
   .chip.on{background:var(--blue);border-color:var(--blue);color:#0d1117;font-weight:600;}
-  .sec{font-size:14px;font-weight:700;margin:14px 0 4px;display:flex;justify-content:space-between;align-items:center;}
-  .sec small{font-weight:400;color:var(--sub);font-size:11px;}
-  .row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);}
+  .sec{font-size:13.5px;font-weight:700;margin:12px 0 2px;display:flex;justify-content:space-between;align-items:center;}
+  .sec small{font-weight:400;color:var(--sub);font-size:10.5px;}
+  .row{display:flex;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line);}
   .row:last-child{border-bottom:none;}
-  .rk{width:26px;height:26px;border-radius:8px;background:var(--card2);text-align:center;line-height:26px;font-weight:700;font-size:13px;margin-right:9px;flex:0 0 26px;}
+  .rk{width:22px;height:22px;border-radius:7px;background:var(--card2);text-align:center;line-height:22px;font-weight:700;font-size:12px;margin-right:8px;flex:0 0 22px;}
   .rk.r1{background:#4a2c0e;color:var(--gold);}
   .rk.r2{background:#3a3f4a;color:#c9d1d9;}
   .rk.r3{background:#4a2a1a;color:#e0916f;}
   .main{flex:1;min-width:0;}
-  .sp{font-size:14px;font-weight:600;}
-  .mtag{font-size:10px;color:var(--sub);}
-  .credit{font-size:15px;font-weight:700;color:var(--ok);}
-  .tier{font-size:11px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;}
+  .sp{font-size:13.5px;font-weight:600;}
+  .mtag{font-size:9.5px;color:var(--sub);}
+  .credit{font-size:14px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums;}
+  .tier{font-size:10px;font-weight:600;padding:1px 6px;border-radius:7px;white-space:nowrap;}
   .tier.强{background:#3d1d1d;color:var(--bad);}
   .tier.优{background:#33270f;color:var(--gold);}
   .tier.观{background:#12263a;color:var(--blue);}
-  .meta2{font-size:10.5px;color:var(--sub);margin-top:3px;line-height:1.5;}
+  .meta2{font-size:9.5px;color:var(--sub);margin-top:2px;line-height:1.5;}
   .b{font-weight:600;color:var(--txt);}
-  .alert-card{border-left:3px solid var(--bad);}
-  .alert-card .t{font-size:12px;color:var(--bad);font-weight:600;margin-bottom:3px;}
-  .empty{color:var(--sub);font-size:12px;text-align:center;padding:14px 0;}
-  footer{position:fixed;bottom:0;left:0;right:0;background:rgba(13,17,23,.95);border-top:1px solid var(--line);padding:8px 12px;font-size:10.5px;color:var(--sub);text-align:center;}
+  details{border:1px solid var(--line);border-radius:10px;background:var(--card);margin:8px 0;overflow:hidden;}
+  details summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+  details summary::-webkit-details-marker{display:none;}
+  details[open] summary{border-bottom:1px solid var(--line);}
+  details .inner{padding:2px 12px 8px;}
+  .empty{color:var(--sub);font-size:11.5px;text-align:center;padding:10px 0;}
+  footer{position:fixed;bottom:0;left:0;right:0;background:rgba(13,17,23,.96);border-top:1px solid var(--line);padding:6px 12px;font-size:10px;color:var(--sub);text-align:center;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>📡 Put 信用价差 · 手机雷达</h1>
-    <div class="sub">宽基 ETF 期权(上交所+深交所) ｜ 只读展示, 绝不自动下单</div>
-    <div class="sub"><span id="sess"></span><span id="clock"></span></div>
+    <h1>📡 Put 信用价差 · 雷达</h1>
+    <div class="sub">宽基 ETF 期权(沪深) ｜ 只读展示, 绝不自动下单 <span id="sess"></span></div>
+    <div class="sub"><span id="clock"></span></div>
   </header>
 
   <div class="toolbar">
@@ -73,55 +76,58 @@
     <button class="btn" id="autoBtn" onclick="toggleAuto()">⏸ 暂停自动刷新</button>
   </div>
 
-  <div id="underlyings"></div>
-
+  <div id="errbar"></div>
+  <div class="grid" id="underlyings"></div>
   <div class="chips" id="chips"></div>
 
-  <div class="sec">🏆 Put 信用价差排行榜 <small id="cnt"></small></div>
+  <div class="sec">🏆 Top 排行榜 <small id="cnt"></small></div>
   <div id="list"></div>
 
-  <div class="sec">🚨 最近报警</div>
-  <div id="alerts"></div>
+  <details id="alertBox">
+    <summary>🚨 最近报警 <small id="alertCnt"></small></summary>
+    <div class="inner" id="alerts"></div>
+  </details>
 
-  <div class="sec">🕒 最近扫描</div>
-  <div id="history"></div>
+  <details id="histBox">
+    <summary>🕒 最近扫描 <small id="histCnt"></small></summary>
+    <div class="inner" id="history"></div>
+  </details>
 </div>
-<footer>数据来自本机扫描器(SQLite 只读) ｜ 数据源: 同花顺现货+新浪期权 ｜ 请勿依据本页下单</footer>
+<footer>只读展示 ｜ 净收=Bid1−Ask1 ｜ 请勿依据本页下单</footer>
 
 <script>
-let autoMs = 5000, autoOn = true, timer = null, curMonth = "全部", curUnder = "全部";
+let autoMs = 8000, autoOn = true, timer = null, curMonth = "全部", curUnder = "全部";
 let UNDER_NAMES = {};
 
 function el(id){ return document.getElementById(id); }
 function fmt(x, n=2){ return (x===null||x===undefined||isNaN(x)) ? "-" : Number(x).toFixed(n); }
 function pct(x, n=1){ return (x===null||x===undefined||isNaN(x)) ? "-" : (Number(x)*100).toFixed(n)+"%"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-
+function uname(code){ return UNDER_NAMES[code] || code; }
 function tierClass(t){ return t==="强机会"?"强":(t==="优质机会"?"优":(t==="观察"?"观":"")); }
 
 function underlineCards(scans){
   let h = "";
-  for(const code in scans){
+  const sorted = Object.keys(scans).sort();
+  for(const code of sorted){
     const s = scans[code];
     const fresh = Number(s.data_fresh)===1;
-    const st = fresh ? '<span class="ustate fresh">新鲜</span>' : '<span class="ustate stale">行情陈旧</span>';
-    const nm = s.underlying_name || code;
-    h += `<div class="card"><div class="uhead"><span class="uname">${esc(nm)} <small class="mtag">${esc(code)}</small></span>${st}</div>`
-       + `<div class="uprice">${fmt(s.spot,4)}</div>`
-       + `<div class="umeta">数据时间 ${esc(s.spot_time||"—")} ｜ 源 ${esc(s.source||"—")} ｜ 合约 ${s.n_contracts} ｜ 候选 ${s.n_spreads}</div></div>`;
+    const st = fresh ? '<span class="st fresh">● 新鲜</span>' : '<span class="st stale">● 陈旧</span>';
+    const tm = (s.spot_time||"").slice(11,16) || "—";
+    h += `<div class="cell"><div class="nm">${esc(s.underlying_name||code)}</div>`
+       + `<div class="px">${fmt(s.spot,4)}</div>${st}`
+       + `<div class="tm">${esc(tm)} ${esc(s.source||"")}</div></div>`;
   }
-  el("underlyings").innerHTML = h || '<div class="empty">暂无扫描数据, 请先扫描</div>';
+  el("underlyings").innerHTML = h || '<div class="empty" style="grid-column:1/-1">暂无数据</div>';
 }
-
-function uname(code){ return UNDER_NAMES[code] || code; }
 
 function renderChips(cands){
   const months = [...new Set(cands.map(c=>c.expire_month))].sort();
   const under = [...new Set(cands.map(c=>c.underlying))];
-  let h = `<span class="chip ${curUnder==="全部"?"on":""}" onclick="setUnder('全部')">全部</span>`;
+  let h = `<span class="chip ${curUnder==="全部"?"on":""}" onclick="setUnder('全部')">全部标的</span>`;
   for(const u of under) h += `<span class="chip ${curUnder===u?"on":""}" onclick="setUnder('${u}')">${esc(uname(u))}</span>`;
   h += `<span class="chip ${curMonth==="全部"?"on":""}" onclick="setMonth('全部')">全部月份</span>`;
-  for(const m of months) h += `<span class="chip ${curMonth===m?"on":""}" onclick="setMonth('${m}')">${esc(m.slice(0,4))}年${Number(m.slice(5))}月</span>`;
+  for(const m of months) h += `<span class="chip ${curMonth===m?"on":""}" onclick="setMonth('${m}')">${Number(m.slice(5))}月</span>`;
   el("chips").innerHTML = h;
 }
 
@@ -132,35 +138,42 @@ function renderList(cands){
   let list = cands.filter(c=>curMonth==="全部"||c.expire_month===curMonth)
                   .filter(c=>curUnder==="全部"||c.underlying===curUnder)
                   .slice(0,10);
-  el("cnt").textContent = `Top ${list.length} / 共 ${cands.length} 个`;
+  el("cnt").textContent = `Top ${list.length} / ${cands.length}`;
   if(!list.length){ el("list").innerHTML='<div class="empty">无候选</div>'; return; }
   let h="";
   list.forEach((c,i)=>{
     const rk = i<3?`rk r${i+1}`:"rk";
     const nm = c.underlying_name || uname(c.underlying);
+    const m = Number((c.expire_month||"").slice(5))||"";
     h += `<div class="row"><div class="${rk}">${i+1}</div>`
-       + `<div class="main"><div class="sp">${fmt(c.sell_strike)}/${fmt(c.buy_strike)}P <span class="mtag">${nm}·${Number(c.expire_month.slice(5))}月</span></div>`
-       + `<div class="meta2">净收 <span class="b">${fmt(c.credit,4)}</span> ｜ 盈 ${fmt(c.max_profit,0)} / 亏 ${fmt(c.max_loss,0)} ｜ BE ${fmt(c.breakeven,4)}<br>安全垫 ${pct(c.safety_margin)} ｜ 风险比 ${pct(c.reward_risk,0)} ｜ Δ ${fmt(c.sell_delta,2)}</div></div>`
-       + `<div style="text-align:right"><div class="credit">${fmt(c.credit,4)}</div><span class="tier ${tierClass(c.tier)}">${esc(c.tier)}</span><div class="meta2">评分 ${fmt(c.score,1)}</div></div></div>`;
+       + `<div class="main"><div class="sp">${fmt(c.sell_strike)}/${fmt(c.buy_strike)}P <span class="mtag">${esc(nm)}·${m}月</span></div>`
+       + `<div class="meta2">安全垫 ${pct(c.safety_margin)} ｜ 风险比 ${pct(c.reward_risk,0)} ｜ 评分 <span class="b">${fmt(c.score,1)}</span></div></div>`
+       + `<div style="text-align:right"><div class="credit">${fmt(c.credit,4)}</div><span class="tier ${tierClass(c.tier)}">${esc(c.tier)}</span></div></div>`;
   });
   el("list").innerHTML = h;
 }
 
 function renderAlerts(al){
-  if(!al||!al.length){ el("alerts").innerHTML='<div class="empty">暂无报警。需同一组合连续 3 次满足条件。</div>'; return; }
+  el("alertCnt").textContent = al.length ? `${al.length}条` : "";
+  if(!al||!al.length){ el("alerts").innerHTML='<div class="empty">暂无报警(需连续3次满足)</div>'; return; }
   let h="";
-  al.slice(0,8).forEach(a=>{
-    h += `<div class="card alert-card"><div class="t">🚨 ${fmt(a.sell_strike)}/${fmt(a.buy_strike)}P (${Number(a.expire_month.slice(5))}月)</div>`
-       + `<div class="meta2">净收 ${fmt(a.credit,4)} ｜ 评分 ${fmt(a.score,1)} ｜ 安全垫 ${pct(a.safety_margin)} ｜ spot ${fmt(a.spot,4)}</div></div>`;
+  al.slice(0,6).forEach(a=>{
+    const nm = a.underlying_name || uname(a.underlying) || "";
+    h += `<div class="row"><div class="main"><div class="sp">${fmt(a.sell_strike)}/${fmt(a.buy_strike)}P <span class="mtag">${esc(nm)}·${Number(a.expire_month.slice(5))}月</span></div>`
+       + `<div class="meta2">净收 <span class="b">${fmt(a.credit,4)}</span> ｜ 评分 ${fmt(a.score,1)} ｜ 安全垫 ${pct(a.safety_margin)}</div></div></div>`;
   });
   el("alerts").innerHTML = h;
 }
 
 function renderHistory(hist){
+  el("histCnt").textContent = hist.length ? `${hist.length}条` : "";
   if(!hist||!hist.length){ el("history").innerHTML='<div class="empty">暂无记录</div>'; return; }
   let h="";
-  hist.slice(0,8).forEach(x=>{
-    h += `<div class="row"><div class="main"><span class="mtag">${esc(x.scan_time)} ｜ ${esc(x.source)}</span><br><span class="mtag">${x.underlying} 合约${x.n_contracts} 候选${x.n_spreads} 报警${x.n_alerts}</span></div><div class="credit" style="font-size:12px">${fmt(x.spot,4)}</div></div>`;
+  hist.slice(0,6).forEach(x=>{
+    const nm = uname(x.underlying) || "";
+    h += `<div class="row"><div class="main"><div class="sp">${esc(nm)} <span class="mtag">${esc(x.scan_time.slice(5,16))} ｜ ${esc(x.source)}</span></div>`
+       + `<div class="meta2">合约 ${x.n_contracts} ｜ 候选 ${x.n_spreads} ｜ 报警 ${x.n_alerts}</div></div>`
+       + `<div style="text-align:right"><div class="credit" style="font-size:12px">${fmt(x.spot,4)}</div></div></div>`;
   });
   el("history").innerHTML = h;
 }
@@ -169,10 +182,18 @@ async function load(){
   try{
     const r = await fetch("/api/latest", {cache:"no-store"});
     const d = await r.json();
-    if(!d.ok){ el("underlyings").innerHTML = `<div class="empty">${esc(d.error||"加载失败")}</div>`; return; }
-    el("clock").textContent = " ｜ 服务器 " + (d.session?.server_time||"");
+    if(!d.ok){ el("errbar").innerHTML = `<div class="errbar">⚠️ ${esc(d.error||"加载失败")}</div>`; return; }
+    el("clock").textContent = "服务器 " + (d.session?.server_time||"");
     const s = d.session;
     el("sess").innerHTML = `<span class="sess ${s.state}">${s.label}</span>`;
+    const st = d.scan_status;
+    if(st){
+      if(st.error) el("errbar").innerHTML = `<div class="errbar">⚠️ 扫描异常: ${esc(st.error)}</div>`;
+      else if(st.ok===false) el("errbar").innerHTML = `<div class="errbar">⚠️ 扫描未入库(标的${st.underlyings||0}) ${esc(st.ts||"")}</div>`;
+      else el("errbar").innerHTML = "";
+    } else {
+      el("errbar").innerHTML = "";
+    }
     UNDER_NAMES = {};
     const sc = d.scans||{};
     for(const code in sc) UNDER_NAMES[code] = sc[code].underlying_name || code;
@@ -183,14 +204,12 @@ async function load(){
     renderList(cands);
     renderAlerts(d.alerts);
     renderHistory(d.history);
-    el("refreshBtn").querySelector(":scope")||0;
   }catch(e){
-    el("list").innerHTML = `<div class="empty">连接失败: ${esc(e.message)}</div>`;
+    el("errbar").innerHTML = `<div class="errbar">⚠️ 连接失败: ${esc(e.message)}</div>`;
   }
 }
 
 function render(){ load(); }
-
 function toggleAuto(){
   autoOn = !autoOn;
   el("autoBtn").textContent = autoOn ? "⏸ 暂停自动刷新" : "▶ 继续自动刷新";
