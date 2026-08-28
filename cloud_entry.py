@@ -15,6 +15,13 @@ import sys
 import threading
 import time
 
+# 云端容器默认 UTC, 统一为北京时间: 影响扫描时间戳/交易时段/服务器时间显示
+os.environ.setdefault('TZ', 'Asia/Shanghai')
+try:
+    time.tzset()
+except (AttributeError, Exception):
+    pass  # Windows 无 tzset, 本地时区本来就是北京时间
+
 # 保证以本项目根为工作目录(相对路径 data/logs 定位正确)
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)

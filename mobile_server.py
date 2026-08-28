@@ -39,8 +39,11 @@ PORT = int(os.environ.get("SCANNER_MOBILE_PORT", "8503"))
 # ------------------------------------------------------------------
 # 交易时段判断(A 股: 工作日 09:30-11:30 / 13:00-15:00)
 # ------------------------------------------------------------------
+BJ_TZ = dt.timezone(dt.timedelta(hours=8))  # 服务器时间统一显示为北京时间
+
+
 def trading_session(now: Optional[dt.datetime] = None) -> dict:
-    now = now or dt.datetime.now()
+    now = now or dt.datetime.now(BJ_TZ)
     if now.weekday() >= 5:
         state = "closed"
     else:
