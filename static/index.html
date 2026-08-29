@@ -81,6 +81,15 @@
   <div class="chips" id="chips"></div>
 
   <div class="sec">🏆 Top 排行榜 <small id="cnt"></small></div>
+  <div class="chips" id="sortChips">
+    <span class="chip on" data-k="score" onclick="setSort('score')">评分</span>
+    <span class="chip" data-k="reward_risk" onclick="setSort('reward_risk')">风险比</span>
+    <span class="chip" data-k="credit" onclick="setSort('credit')">净收</span>
+    <span class="chip" data-k="safety_margin" onclick="setSort('safety_margin')">安全垫</span>
+    <span class="chip" data-k="pop" onclick="setSort('pop')">POP</span>
+    <span class="chip" data-k="ev" onclick="setSort('ev')">EV</span>
+    <span class="chip" id="orderChip" onclick="setSort('__order__')">⇅ 降序</span>
+  </div>
   <div id="list"></div>
 
   <details id="alertBox">
@@ -97,6 +106,7 @@
 
 <script>
 let autoMs = 8000, autoOn = true, timer = null, curMonth = "全部", curUnder = "全部";
+let sortKey = "score", sortAsc = false;
 let UNDER_NAMES = {};
 
 function el(id){ return document.getElementById(id); }
@@ -134,10 +144,27 @@ function renderChips(cands){
 function setMonth(m){ curMonth=m; render(); }
 function setUnder(u){ curUnder=u; render(); }
 
+function sortVal(c){
+  const v = c[sortKey];
+  return (v===null||v===undefined||isNaN(v)) ? -1e18 : Number(v);
+}
+function setSort(k){
+  if(k==="__order__"){ sortAsc=!sortAsc; }
+  else if(sortKey===k){ sortAsc=!sortAsc; }
+  else { sortKey=k; sortAsc=false; }
+  document.querySelectorAll("#sortChips .chip").forEach(sp=>{
+    if(sp.dataset.k===sortKey) sp.classList.add("on"); else sp.classList.remove("on");
+  });
+  const oc = el("orderChip");
+  if(oc) oc.textContent = sortAsc ? "⇅ 升序" : "⇅ 降序";
+  render();
+}
 function renderList(cands){
   let list = cands.filter(c=>curMonth==="全部"||c.expire_month===curMonth)
                   .filter(c=>curUnder==="全部"||c.underlying===curUnder)
-                  .slice(0,10);
+                  .slice();
+  list.sort((a,b)=> sortAsc ? sortVal(a)-sortVal(b) : sortVal(b)-sortVal(a));
+  list = list.slice(0,10);
   el("cnt").textContent = `Top ${list.length} / ${cands.length}`;
   if(!list.length){ el("list").innerHTML='<div class="empty">无候选</div>'; return; }
   let h="";
@@ -147,7 +174,8 @@ function renderList(cands){
     const m = Number((c.expire_month||"").slice(5))||"";
     h += `<div class="row"><div class="${rk}">${i+1}</div>`
        + `<div class="main"><div class="sp">${fmt(c.sell_strike)}/${fmt(c.buy_strike)}P <span class="mtag">${esc(nm)}·${m}月</span></div>`
-       + `<div class="meta2">安全垫 ${pct(c.safety_margin)} ｜ 风险比 ${pct(c.reward_risk,0)} ｜ 评分 <span class="b">${fmt(c.score,1)}</span></div></div>`
+       + `<div class="meta2">安全垫 ${pct(c.safety_margin)} ｜ 风险比 ${pct(c.reward_risk,0)} ｜ POP ${pct(c.pop)}</div>`
+       + `<div class="meta2">评分 <span class="b">${fmt(c.score,1)}</span> ｜ EV ${(c.ev===null||c.ev===undefined)?'-':fmt(c.ev,0)}</div></div>`
        + `<div style="text-align:right"><div class="credit">${fmt(c.credit,4)}</div><span class="tier ${tierClass(c.tier)}">${esc(c.tier)}</span></div></div>`;
   });
   el("list").innerHTML = h;

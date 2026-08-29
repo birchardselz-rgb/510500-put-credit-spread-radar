@@ -87,6 +87,9 @@ CREATE TABLE IF NOT EXISTS spread_candidates (
     safety_margin    REAL,
     reward_risk      REAL,
     total_slippage   REAL,
+    pop              REAL,
+    ev               REAL,
+    ev_ratio         REAL,
     sell_delta       REAL,
     sell_iv          REAL,
     buy_delta        REAL,
@@ -109,6 +112,9 @@ _MIGRATIONS = [
     ("scans", "underlying", "TEXT"),
     ("option_quotes", "underlying", "TEXT"),
     ("spread_candidates", "underlying", "TEXT"),
+    ("spread_candidates", "pop", "REAL"),
+    ("spread_candidates", "ev", "REAL"),
+    ("spread_candidates", "ev_ratio", "REAL"),
 ]
 
 
@@ -221,8 +227,9 @@ class Database:
                 d["sell_name"], d["buy_name"], d["sell_strike"], d["buy_strike"],
                 d["width"], d["credit"], d["mid_credit"], d["max_profit"],
                 d["max_loss"], d["breakeven"], d["safety_margin"], d["reward_risk"],
-                d["total_slippage"], d["sell_delta"], d["sell_iv"], d["buy_delta"],
-                d["buy_iv"], d.get("score", 0.0), d.get("tier", ""),
+                d["total_slippage"], d.get("pop"), d.get("ev"), d.get("ev_ratio"),
+                d["sell_delta"], d["sell_iv"], d["buy_delta"], d["buy_iv"],
+                d.get("score", 0.0), d.get("tier", ""),
                 d.get("suggested_lots", 0), d.get("account_risk_pct", 0.0),
                 d.get("consec_hits", 0), int(d.get("alert_fired", False)),
                 d.get("spot", spot),
@@ -233,10 +240,10 @@ class Database:
                    (scan_id, underlying, expire_month, sell_code, buy_code,
                     sell_name, buy_name, sell_strike, buy_strike, width, credit,
                     mid_credit, max_profit, max_loss, breakeven, safety_margin,
-                    reward_risk, total_slippage, sell_delta, sell_iv, buy_delta,
-                    buy_iv, score, tier, suggested_lots, account_risk_pct,
-                    consec_hits, alert_fired, spot)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    reward_risk, total_slippage, pop, ev, ev_ratio,
+                    sell_delta, sell_iv, buy_delta, buy_iv, score, tier,
+                    suggested_lots, account_risk_pct, consec_hits, alert_fired, spot)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 s_rows,
             )
         return scan_id

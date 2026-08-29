@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 core/scoring.py
-Put 信用价差 0~10 分综合评分模型。
+Put 信用价差 0~10 分综合评分模型 —— 专业概率交易版（V1.3）。
 
-维度: 净收 / 安全垫 / 收益风险 / 流动性(盘口) / 卖出Delta / 量能 / IV
+维度: 盈利概率POP / 期望收益EV / 净收 / 安全垫 / 收益风险 / 流动性 / 卖出Delta / 量能 / IV
 权重合计 1.0, 各维度映射到 0~10 后加权平均。
 
-硬性扣分: 盈亏平衡点接近或高于现价(安全垫不足)必须明显扣分,
-不能因为收益/风险比很高就直接排第一。
+专业升级(Tastytrade 概率交易体系):
+  - POP(盈利概率): 基于 BS lognormal 模型, 到期现货>盈亏平衡点的概率, 权重最高。
+    阈值参考: 卖出 0.15~0.30 Delta 的 Put 价差, POP 通常 70%~88%。
+  - EV(期望收益): POP×最大盈利 − (1−POP)×最大亏损, 以「EV/最大亏损」衡量风险调整后期望。
+  - 硬性门槛: POP<60% 封顶 5分(观察线以下), POP<70% 封顶 7.5分。
+  - 原有硬性扣分: 盈亏平衡点接近或高于现价必须明显扣分, 不能因收益/风险比高就排第一。
 
 分档:
   score < 5       跳过
@@ -17,7 +21,7 @@ Put 信用价差 0~10 分综合评分模型。
 """
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Optional
 
 from core.spreads import Spread
 
@@ -78,6 +82,47 @@ def score_reward_risk(rr: float, anchors: Dict[str, float]) -> float:
         return _clamp(_lerp(rr, 0.0, 0.0, a8, 8.0))
     if rr <= a10:
         return _clamp(_lerp(rr, a8, 8.0, a10, 10.0))
+    return 10.0
+
+
+def score_pop(pop: Optional[float], anchors: Dict[str, float]) -> float:
+    """盈利概率维度(权重最高)。锚点: 0.65->5, 0.75->8, 0.88->10。
+
+    专业参考: 卖出 0.15~0.30 Delta 的价差 POP 约 70%~88%。
+    无 IV(Greeks 缺失)时给中性分, 避免误判。
+    """
+    if pop is None:
+        return 5.0
+    a5 = anchors.get("a5", 0.60)
+    a8 = anchors.get("a8", 0.75)
+    a10 = anchors.get("a10", 0.88)
+    if pop <= 0.50:
+        return _clamp(_lerp(pop, 0.40, 0.0, 0.50, 2.0))
+    if pop <= a5:
+        return _clamp(_lerp(pop, 0.50, 2.0, a5, 5.0))
+    if pop <= a8:
+        return _clamp(_lerp(pop, a5, 5.0, a8, 8.0))
+    if pop <= a10:
+        return _clamp(_lerp(pop, a8, 8.0, a10, 10.0))
+    return 10.0
+
+
+def score_ev(ev_ratio: Optional[float], anchors: Dict[str, float]) -> float:
+    """期望收益维度: 用 EV/最大亏损 衡量风险调整后期望。
+
+    ev_ratio 0->5, 0.15->8, 0.30->10; 负期望(ev_ratio<0) -> 1 分(必须回避)。
+    """
+    if ev_ratio is None:
+        return 5.0
+    a5 = anchors.get("a5", 0.00)
+    a8 = anchors.get("a8", 0.15)
+    a10 = anchors.get("a10", 0.30)
+    if ev_ratio <= 0:
+        return _clamp(_lerp(ev_ratio, -0.20, 0.0, 0.0, 2.0))
+    if ev_ratio <= a8:
+        return _clamp(_lerp(ev_ratio, a5, 5.0, a8, 8.0))
+    if ev_ratio <= a10:
+        return _clamp(_lerp(ev_ratio, a8, 8.0, a10, 10.0))
     return 10.0
 
 
@@ -146,15 +191,21 @@ def score_spread(
     max_slip_ratio: float = 0.50,
     min_vol: int = 20,
     min_oi: int = 100,
+    pop_min_hard: float = 0.60,   # POP<此值 封顶5分
+    pop_min_soft: float = 0.70,   # POP<此值 封顶7.5分
 ) -> Dict[str, float]:
-    """返回 {score, credit, safety, reward_risk, liquidity, delta, volume_oi, iv, tier}"""
+    """返回 {score, credit, safety, reward_risk, pop, ev, liquidity, delta, volume_oi, iv, tier}"""
     credit_anchors = anchors.get("credit", {})
     safety_anchors = anchors.get("safety", {})
     rr_anchors = anchors.get("rr", {})
+    pop_anchors = anchors.get("pop", {})
+    ev_anchors = anchors.get("ev", {})
 
     c_credit = score_credit(spread.credit, credit_anchors)
     c_safety = score_safety(spread.safety_margin, safety_anchors)
     c_rr = score_reward_risk(spread.reward_risk, rr_anchors)
+    c_pop = score_pop(spread.pop, pop_anchors)
+    c_ev = score_ev(spread.ev_ratio, ev_anchors)
     c_liq = score_liquidity(spread, max_ratio=max_slip_ratio)
     c_delta = score_delta(abs(spread.sell.delta or 0.0), delta_min, delta_max)
     c_vol = score_volume_oi(spread, min_vol, min_oi)
@@ -164,14 +215,26 @@ def score_spread(
     if total_w <= 0:
         total_w = 1.0
     score = (
-        weights.get("credit", 0.30) * c_credit
-        + weights.get("safety", 0.25) * c_safety
-        + weights.get("reward_risk", 0.15) * c_rr
-        + weights.get("liquidity", 0.10) * c_liq
-        + weights.get("delta", 0.10) * c_delta
-        + weights.get("volume_oi", 0.05) * c_vol
-        + weights.get("iv", 0.05) * c_iv
+        weights.get("pop", 0.25) * c_pop
+        + weights.get("ev", 0.18) * c_ev
+        + weights.get("credit", 0.18) * c_credit
+        + weights.get("safety", 0.12) * c_safety
+        + weights.get("reward_risk", 0.10) * c_rr
+        + weights.get("liquidity", 0.06) * c_liq
+        + weights.get("delta", 0.05) * c_delta
+        + weights.get("volume_oi", 0.03) * c_vol
+        + weights.get("iv", 0.03) * c_iv
     ) / total_w
+
+    # ---- 硬性门槛: 专业概率交易 (POP 不足则降档) ----
+    if spread.pop is not None:
+        if spread.pop < pop_min_hard:
+            score = min(score, 5.0)          # 胜率<60%: 观察线以下
+        elif spread.pop < pop_min_soft:
+            score = min(score, 7.5)          # 胜率<70%: 优质线以下
+    # 注: EV(期望收益)作为软性维度参与加权(score_ev), 不做一票否决。
+    #     期权卖方存在 IV 高于实现波动率的结构性 edge, 单看 EV 为负即否决
+    #     会把几乎所有实盘组合错杀; 专业做法是 EV 高低影响分数而非直接跳过。
 
     # ---- 硬性扣分: 盈亏平衡点接近或高于现价 ----
     if spread.breakeven >= spread.spot:
@@ -189,6 +252,8 @@ def score_spread(
         "c_credit": round(c_credit, 4),
         "c_safety": round(c_safety, 4),
         "c_reward_risk": round(c_rr, 4),
+        "c_pop": round(c_pop, 4),
+        "c_ev": round(c_ev, 4),
         "c_liquidity": round(c_liq, 4),
         "c_delta": round(c_delta, 4),
         "c_volume_oi": round(c_vol, 4),

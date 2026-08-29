@@ -3,7 +3,7 @@ data_source:
   # tonghuashun=同花顺现货+新浪期权(仅上交所, 深市不支持)
   primary: akshare_sina
   underlying: "510500"
-  scan_interval_seconds: 10
+  scan_interval_seconds: 5
   request_timeout: 8
   max_retries: 3
   retry_backoff_seconds: 1.0
@@ -160,14 +160,17 @@ strategy:
   min_open_interest: 100
   filter_illiquid: true
 scoring:
+  # 专业概率交易权重: POP(盈利概率)与EV(期望收益)占主导
   weights:
-    credit: 0.3
-    safety: 0.25
-    reward_risk: 0.15
-    liquidity: 0.1
-    delta: 0.1
-    volume_oi: 0.05
-    iv: 0.05
+    pop: 0.25
+    ev: 0.18
+    credit: 0.18
+    safety: 0.12
+    reward_risk: 0.10
+    liquidity: 0.06
+    delta: 0.05
+    volume_oi: 0.03
+    iv: 0.03
   min_score_pass: 5.0
   score_observe_floor: 5.0
   score_good_floor: 7.0
@@ -182,6 +185,16 @@ scoring:
   rr_anchor:
     a8: 0.5
     a10: 0.8
+  pop_anchor:
+    a5: 0.60
+    a8: 0.75
+    a10: 0.88
+  ev_anchor:
+    a5: 0.0
+    a8: 0.15
+    a10: 0.30
+  pop_min_hard: 0.60
+  pop_min_soft: 0.70
   iv_good_min: 0.15
   iv_good_max: 0.45
 alerts:
@@ -192,7 +205,7 @@ alerts:
   min_credit_to_alert: 0.085
   min_score_to_alert: 7.0
   console_enabled: true
-  sound_enabled: false           # 云端无桌面, 关闭声音
+  sound_enabled: true
   webhook:
     enabled: false
     type: ''

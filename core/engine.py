@@ -146,6 +146,8 @@ class ScanEngine:
                 max_slip_ratio=float(strategy.get("max_leg_bid_ask_ratio", 0.50)),
                 min_vol=int(strategy.get("min_volume", 20)),
                 min_oi=int(strategy.get("min_open_interest", 100)),
+                pop_min_hard=float(scoring_cfg.get("pop_min_hard", 0.60)),
+                pop_min_soft=float(scoring_cfg.get("pop_min_soft", 0.70)),
             )
             d = sp.to_dict()
             d.update(score_map)
@@ -163,7 +165,7 @@ class ScanEngine:
                 scored.append(d)
 
         # 4) 排序(评分降序)
-        scored.sort(key=lambda x: x["score"], reverse=True)
+        scored.sort(key=lambda x: (x["score"], x.get("ev") or 0.0), reverse=True)
 
         # 5) 报警(仅针对达标组合)
         for d in scored:
@@ -260,10 +262,14 @@ class ScanEngine:
             flush=True,
         )
         for d in result.scored[:10]:
+            _pop = d.get('pop')
+            _pop_s = f"{_pop*100:5.1f}%" if _pop is not None else '   -  '
+            _ev_s = f"{d.get('ev'):6.0f}" if d.get('ev') is not None else '    - '
             print(
                 f"  {d['label']:>12s} 净收={d['credit']:.4f} 盈利={d['max_profit']:.0f} "
                 f"亏损={d['max_loss']:.0f} BE={d['breakeven']:.4f} "
                 f"安全垫={d['safety_margin']*100:5.2f}% RR={d['reward_risk']*100:5.1f}% "
+                f"POP={_pop_s} EV={_ev_s} "
                 f"Delta={d.get('sell_delta') if d.get('sell_delta') is not None else '-':>7} "
                 f"评分={d['score']:5.2f} {d['tier']}",
                 flush=True,

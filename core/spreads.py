@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from core.contracts import Contract
+from core.bs import DEFAULT_RISK_FREE, dte_to_T, implied_vol, pop_expire_above
 
 
 @dataclass
@@ -31,6 +32,9 @@ class Spread:
     breakeven: float = 0.0         # 到期盈亏平衡点
     safety_margin: float = 0.0     # 安全垫 (spot-BE)/spot
     reward_risk: float = 0.0       # 收益/风险比 最大盈利/最大亏损
+    pop: Optional[float] = None    # 盈利概率(到期现货>BE), 专业度量
+    ev: Optional[float] = None     # 期望收益(元/组) = POP×盈利 - (1-POP)×亏损
+    ev_ratio: Optional[float] = None  # 期望收益/最大亏损 (风险调整后期望)
     sell_slippage: float = 0.0     # 卖出腿盘口宽度
     buy_slippage: float = 0.0      # 买入腿盘口宽度
     total_slippage: float = 0.0    # 组合总滑点(两腿盘口宽度之和)
@@ -67,6 +71,7 @@ class Spread:
             "max_profit": self.max_profit, "max_loss": self.max_loss,
             "breakeven": self.breakeven, "safety_margin": self.safety_margin,
             "reward_risk": self.reward_risk, "total_slippage": self.total_slippage,
+            "pop": self.pop, "ev": self.ev, "ev_ratio": self.ev_ratio,
             "sell_delta": self.sell.delta, "sell_iv": self.sell.iv,
             "buy_delta": self.buy.delta, "buy_iv": self.buy.iv,
             "expire_month": self.expire_month, "label": self.label,
@@ -144,10 +149,39 @@ def compute_spread(
     sp.breakeven = round(sell.strike - credit, 6)
     sp.safety_margin = round((spot - sp.breakeven) / spot, 6) if spot > 0 else 0.0
     sp.reward_risk = round(sp.max_profit / sp.max_loss, 6) if sp.max_loss > 0 else 0.0
+    _fill_probability_metrics(sp, spot, sell, credit, multiplier)
     sp.sell_slippage = round(sell.ask - sell.bid, 6)
     sp.buy_slippage = round(buy.ask - buy.bid, 6)
     sp.total_slippage = round(sp.sell_slippage + sp.buy_slippage, 6)
     return sp
+
+
+def _fill_probability_metrics(sp: Spread, spot: float, sell: Contract,
+                              credit: float, multiplier: int) -> None:
+    """专业概率度量: 用 BS 计算盈利概率 POP 与期望收益 EV。
+
+    优先使用行情源 IV(上交所), 深交所无 Greeks 时用卖出腿 mid 价反推 IV;
+    无法取得 IV/到期时间/价格时保持 None(评分层给中性分, 不误报)。
+    """
+    T = dte_to_T(sell.days_to_expiry) if sell.days_to_expiry else 0.0
+    if T <= 0 or sp.breakeven <= 0 or spot <= 0:
+        return
+    sigma = sell.iv if (sell.iv or 0.0) > 0 else None
+    if sigma is None:
+        mid = ((sell.bid + sell.ask) / 2.0) if (sell.bid or 0.0) > 0 and (sell.ask or 0.0) > 0 else None
+        if mid:
+            sigma = implied_vol(spot, sell.strike, T, DEFAULT_RISK_FREE, mid, "P")
+    if not sigma or sigma <= 0:
+        return
+    pop = pop_expire_above(spot, sp.breakeven, T, sigma, DEFAULT_RISK_FREE)
+    if pop is None:
+        return
+    max_profit = credit * multiplier
+    max_loss = (sp.width - credit) * multiplier
+    ev = pop * max_profit - (1.0 - pop) * max_loss
+    sp.pop = round(pop, 6)
+    sp.ev = round(ev, 2)
+    sp.ev_ratio = round(ev / max_loss, 6) if max_loss > 0 else 0.0
 
 
 def account_risk(spread: Spread, capital: float, lots: int) -> dict:
