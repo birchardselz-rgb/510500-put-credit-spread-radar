@@ -1,0 +1,14 @@
+# render.yaml - 云端完整看板(Streamlit) Blueprint 一键部署
+# 用法: Render Dashboard -> New -> Blueprint -> 连接本仓库 -> 选择本目录的 render.yaml
+# 注意: 此服务独立于现有手机版云端服务, 互不影响。
+services:
+  - type: web
+    name: put-spread-dashboard-cloud
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 8501

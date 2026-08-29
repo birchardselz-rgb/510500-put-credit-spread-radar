@@ -1,0 +1,7 @@
+# 云端完整看板运行依赖
+# 数据源: 新浪期权主源(akshare) + requests; 看板: streamlit + pandas
+requests>=2.31.0
+PyYAML>=6.0
+akshare>=1.14.0
+streamlit>=1.32.0
+pandas>=2.0.0

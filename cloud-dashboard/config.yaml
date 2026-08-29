@@ -1,0 +1,225 @@
+data_source:
+  # akshare_sina=纯新浪(上交所+深交所统一适配, 9 只宽基 ETF 全部实测通过)
+  # tonghuashun=同花顺现货+新浪期权(仅上交所, 深市不支持)
+  primary: akshare_sina
+  underlying: "510500"
+  scan_interval_seconds: 5
+  request_timeout: 8
+  max_retries: 3
+  retry_backoff_seconds: 1.0
+  max_batch: 40
+  quote_stale_seconds: 30
+  enable_greeks: true
+underlyings:
+  '510050':
+    name: 上证50ETF
+    category: 50ETF
+    spot_code: '510050'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.009
+      a8: 0.010
+      a10: 0.012
+    alert_min_credit: 0.009
+    enabled: true
+  '510300':
+    name: 沪深300ETF沪
+    category: 300ETF
+    spot_code: '510300'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.030
+      a8: 0.035
+      a10: 0.040
+    alert_min_credit: 0.030
+    enabled: true
+  '510500':
+    name: 中证500ETF沪
+    category: 500ETF
+    spot_code: '510500'
+    multiplier: 10000
+    strike_widths:
+    - 0.25
+    - 0.5
+    credit_anchor:
+      a6: 0.085
+      a8: 0.095
+      a10: 0.105
+    alert_min_credit: 0.085
+    enabled: true
+  '588000':
+    name: 科创50ETF
+    category: 科创50ETF
+    spot_code: '588000'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.017
+      a8: 0.020
+      a10: 0.024
+    alert_min_credit: 0.017
+    enabled: true
+  '588080':
+    name: 科创板50ETF易方达
+    category: 科创50ETF
+    spot_code: '588080'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.018
+      a8: 0.022
+      a10: 0.026
+    alert_min_credit: 0.018
+    enabled: true
+  '159901':
+    name: 深证100ETF
+    category: 深证100ETF
+    spot_code: '159901'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.032
+      a8: 0.038
+      a10: 0.044
+    alert_min_credit: 0.032
+    enabled: true
+  '159915':
+    name: 创业板ETF
+    category: 创业板ETF
+    spot_code: '159915'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.038
+      a8: 0.044
+      a10: 0.050
+    alert_min_credit: 0.038
+    enabled: true
+  '159919':
+    name: 沪深300ETF深
+    category: 沪深300ETF
+    spot_code: '159919'
+    multiplier: 10000
+    strike_widths:
+    - 0.1
+    - 0.2
+    credit_anchor:
+      a6: 0.022
+      a8: 0.026
+      a10: 0.030
+    alert_min_credit: 0.022
+    enabled: true
+  '159922':
+    name: 中证500ETF深
+    category: 中证500ETF
+    spot_code: '159922'
+    multiplier: 10000
+    strike_widths:
+    - 0.05
+    - 0.1
+    credit_anchor:
+      a6: 0.007
+      a8: 0.0085
+      a10: 0.010
+    alert_min_credit: 0.007
+    enabled: true
+contracts:
+  expire_days_min: 15
+  expire_days_max: 45
+  expire_months_count: 3        # 扫描接下来 N 个到期月份(如 3=9月+10月+12月季度); 0=按上面天数窗口
+  preferred_expire_month: null
+  exclude_adjusted: true
+account:
+  capital: 500000
+  max_risk_per_batch_pct: 0.02
+  suggested_lots_cap: 100
+strategy:
+  min_credit_attractive: 0.085
+  min_credit_good: 0.095
+  min_credit_strong: 0.105
+  min_safety_margin: 0.02
+  min_reward_risk_ratio: 0.5
+  sell_delta_min_abs: 0.15
+  sell_delta_max_abs: 0.35
+  max_leg_bid_ask_ratio: 0.5
+  min_volume: 20
+  min_open_interest: 100
+  filter_illiquid: true
+scoring:
+  # 专业概率交易权重: POP(盈利概率)与EV(期望收益)占主导
+  weights:
+    pop: 0.25
+    ev: 0.18
+    credit: 0.18
+    safety: 0.12
+    reward_risk: 0.10
+    liquidity: 0.06
+    delta: 0.05
+    volume_oi: 0.03
+    iv: 0.03
+  min_score_pass: 5.0
+  score_observe_floor: 5.0
+  score_good_floor: 7.0
+  score_strong_floor: 9.0
+  credit_anchor:
+    a6: 0.085
+    a8: 0.095
+    a10: 0.105
+  safety_anchor:
+    a8: 0.02
+    a10: 0.04
+  rr_anchor:
+    a8: 0.5
+    a10: 0.8
+  pop_anchor:
+    a5: 0.60
+    a8: 0.75
+    a10: 0.88
+  ev_anchor:
+    a5: 0.0
+    a8: 0.15
+    a10: 0.30
+  pop_min_hard: 0.60
+  pop_min_soft: 0.70
+  iv_good_min: 0.15
+  iv_good_max: 0.45
+alerts:
+  confirm_required: 3
+  cooldown_seconds: 300
+  re_alert_score_delta: 0.5
+  re_alert_credit_delta: 0.01
+  min_credit_to_alert: 0.085
+  min_score_to_alert: 7.0
+  console_enabled: true
+  sound_enabled: true
+  webhook:
+    enabled: false
+    type: ''
+    url: ''
+    secret: ''
+storage:
+  database: data/scanner.db
+  save_every_scan: true
+logging:
+  level: INFO
+  file: logs/scanner.log
+  max_bytes: 10485760
+  backup_count: 5
+mock:
+  scenario: acceptance
+  expiry_date: '2026-09-23'
+  days_to_expiry: 27
