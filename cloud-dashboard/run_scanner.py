@@ -15,10 +15,27 @@ run_scanner.py
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 
+def _bypass_stale_proxy() -> None:
+    """绕过失效的系统/用户级代理环境变量。
+
+    若用户级环境变量 HTTP_PROXY/HTTPS_PROXY/ALL_PROXY 指向已停止的本地代理
+    (如 127.0.0.1:3067), requests/akshare 会尝试经该代理访问新浪等行情源而失败。
+    此处仅对本进程移除, 不影响用户其他软件。
+    """
+    for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
+              "http_proxy", "https_proxy", "all_proxy"):
+        os.environ.pop(k, None)
+    # 显式标记无代理, 防止 requests 回退到系统代理
+    os.environ["NO_PROXY"] = "*"
+    os.environ["no_proxy"] = "*"
+
+
 def main() -> int:
+    _bypass_stale_proxy()
     parser = argparse.ArgumentParser(description="510500+588080 Put 信用价差实时扫描器 V1.2")
     parser.add_argument("--mode", choices=["mock", "live"], default=None,
                         help="强制数据源模式(mock=离线模拟, live=实时)")
@@ -29,7 +46,6 @@ def main() -> int:
     args = parser.parse_args()
 
     from util import load_config, setup_logging, project_path
-    import os
     os.chdir(project_path())  # 保证相对路径(data/logs)定位正确
 
     cfg = load_config()
